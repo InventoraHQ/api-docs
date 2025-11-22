@@ -3,39 +3,56 @@
 
 ## Authentication
 
-All API endpoints require authentication using an API key. 
+All API requests require authentication using an API key. To obtain an API key, please contact hello@inventora.com.
 
-To obtain an API key, please email hello@inventora.com.
+Include your API key in one of two ways:
 
-### Passing the API Key
-
-The API key can be passed in one of two ways:
-
-1. **Header (Recommended)**: Include the key in the request header
-   ```
-   x-inventora-api-key: your-api-key-here
-   ```
-
-2. **Query Parameter**: Append the key to the URL
-   ```
-   ?x-inventora-api-key=your-api-key-here
-   ```
+1. As a header: `x-inventora-api-key: YOUR_API_KEY`
+2. As a query parameter: `?x-inventora-api-key=YOUR_API_KEY`
 
 ## Base URL
 
 All endpoints are relative to your API base URL.
 
+## Common Parameters
+
+### Pagination
+
+List endpoints support pagination with the following query parameters:
+
+- `limit` (optional): Number of results to return (default: 100, max: 1000)
+- `offset` (optional): Number of results to skip (default: 0)
+
+### Response Format
+
+Paginated responses include:
+
+```json
+{
+  "data": [...],
+  "pagination": {
+    "totalCount": 150,
+    "offset": 0,
+    "limit": 100
+  }
+}
+```
+
 ## Endpoints
 
-### Get Products
+### Products
 
-Retrieve a paginated list of products.
+#### List Products
 
-**Endpoint:** `GET /products`
+```
+GET /products
+```
+
+Returns a paginated list of products.
 
 **Query Parameters:**
-- `limit` (optional): Number of results to return. Maximum 1000, default 100.
-- `offset` (optional): Number of results to skip. Default 0.
+- `limit` (optional): Number of results (default: 100, max: 1000)
+- `offset` (optional): Results to skip (default: 0)
 
 **Response:**
 ```json
@@ -55,10 +72,10 @@ Retrieve a paginated list of products.
       "ean": "string",
       "minimumQuantity": "number",
       "reorderURLs": ["string"],
-      "productionType": "infinite|single|produced|supplied|bundle",
       "locationStockLevels": {
         "Location Name": "number"
       },
+      "productionType": "infinite|single|produced|supplied|bundle",
       "materials": [
         {
           "id": "string",
@@ -74,76 +91,32 @@ Retrieve a paginated list of products.
     }
   ],
   "pagination": {
-    "totalCount": 0,
+    "totalCount": 150,
     "offset": 0,
     "limit": 100
   }
 }
 ```
 
-### Get Materials
+#### Get Product
 
-Retrieve a paginated list of materials (supplies).
-
-**Endpoint:** `GET /materials`
-
-**Query Parameters:**
-- `limit` (optional): Number of results to return. Maximum 1000, default 100.
-- `offset` (optional): Number of results to skip. Default 0.
-
-**Response:**
-
-Same structure as Get Products endpoint.
-
-### Get Locations
-
-Retrieve a paginated list of locations.
-
-**Endpoint:** `GET /locations`
-
-**Query Parameters:**
-- `limit` (optional): Number of results to return. Maximum 1000, default 100.
-- `offset` (optional): Number of results to skip. Default 0.
-
-**Response:**
-```json
-{
-  "data": [
-    {
-      "id": "string",
-      "OrganizationId": "string",
-      "name": "string",
-      "isDefault": false,
-      "hideMaterials": false,
-      "address1": "string",
-      "address2": "string",
-      "city": "string",
-      "state": "string",
-      "zip": "string",
-      "country": "string"
-    }
-  ],
-  "pagination": {
-    "totalCount": 0,
-    "offset": 0,
-    "limit": 100
-  }
-}
+```
+GET /products/:id
 ```
 
-### Update Product
+Returns a single product by ID.
 
-Update a product by ID.
+**Response:** Same as a single product object from the list endpoint.
 
-**Endpoint:** `PATCH /products/:id`
+#### Update Product
 
-**URL Parameters:**
-- `id`: The product ID
+```
+PATCH /products/:id
+```
+
+Updates a product's details.
 
 **Request Body:**
-
-All fields are optional. Only include fields you want to update.
-
 ```json
 {
   "name": "string",
@@ -161,44 +134,140 @@ All fields are optional. Only include fields you want to update.
 }
 ```
 
-**Notes:**
-- `unitPrice` cannot be updated if the product has stock blocks tied to non-initial logs
-- When updating `productionType`, use "produced" for batch production
+All fields are optional. Only include fields you want to update.
 
-**Response:**
+**Note:** `unitPrice` cannot be updated if the product has stock blocks tied to non-initial logs.
 
-Returns the updated product with the same structure as a single item from the Get Products endpoint.
+**Response:** Updated product object.
 
-**Error Responses:**
-- `400`: Invalid request or unitPrice cannot be updated
-- `404`: Product not found
+#### Update Product Stock Level
 
-### Update Material
+```
+POST /products/:id/stock-level-updates
+```
 
-Update a material (supply) by ID.
-
-**Endpoint:** `PATCH /materials/:id`
-
-**URL Parameters:**
-- `id`: The material ID
+Updates the stock level for a product at a specific location.
 
 **Request Body:**
+```json
+{
+  "quantity": "number",
+  "locationName": "string",
+  "updateType": "audit|restock|loss|custom",
+  "notes": "string",
+  "customStatusId": "number"
+}
+```
 
-Same structure as Update Product endpoint.
+**Required fields:**
+- `quantity`: The quantity to set (for audit) or adjust (for other types)
+- `locationName`: Name of the location
+- `updateType`: Type of stock update
+  - `audit`: Sets stock to the exact quantity specified
+  - `restock`: Adds to current stock level
+  - `loss`: Subtracts from current stock level
+  - `custom`: Uses a custom status (requires `customStatusId`)
+
+**Optional fields:**
+- `notes`: Additional notes about the update
+- `customStatusId`: Required when `updateType` is "custom"
+
+**Response:** Updated product object with new stock levels.
+
+### Materials
+
+#### List Materials
+
+```
+GET /materials
+```
+
+Returns a paginated list of materials (supplies).
+
+**Query Parameters:**
+- `limit` (optional): Number of results (default: 100, max: 1000)
+- `offset` (optional): Results to skip (default: 0)
+
+**Response:** Same format as products list endpoint.
+
+#### Get Material
+
+```
+GET /materials/:id
+```
+
+Returns a single material by ID.
+
+**Response:** Same as a single material object from the list endpoint.
+
+#### Update Material
+
+```
+PATCH /materials/:id
+```
+
+Updates a material's details.
+
+**Request Body:** Same as update product endpoint.
+
+**Response:** Updated material object.
+
+#### Update Material Stock Level
+
+```
+POST /materials/:id/stock-level-updates
+```
+
+Updates the stock level for a material at a specific location.
+
+**Request Body:** Same as update product stock level endpoint.
+
+**Response:** Updated material object with new stock levels.
+
+### Locations
+
+#### List Locations
+
+```
+GET /locations
+```
+
+Returns a paginated list of locations.
+
+**Query Parameters:**
+- `limit` (optional): Number of results (default: 100, max: 1000)
+- `offset` (optional): Results to skip (default: 0)
 
 **Response:**
-
-Returns the updated material with the same structure as a single item from the Get Materials endpoint.
-
-**Error Responses:**
-- `400`: Invalid request or unitPrice cannot be updated
-- `404`: Material not found
+```json
+{
+  "data": [
+    {
+      "id": "string",
+      "name": "string",
+      "isDefault": "boolean",
+      "hideMaterials": "boolean",
+      "address1": "string",
+      "address2": "string",
+      "city": "string",
+      "state": "string",
+      "zip": "string",
+      "country": "string"
+    }
+  ],
+  "pagination": {
+    "totalCount": 10,
+    "offset": 0,
+    "limit": 100
+  }
+}
+```
 
 ## Error Responses
 
 All endpoints may return the following error responses:
 
-**401 Unauthorized:**
+**401 Unauthorized**
 ```json
 {
   "error": "API key missing"
@@ -209,28 +278,32 @@ All endpoints may return the following error responses:
   "error": "Invalid API key"
 }
 ```
+
+**400 Bad Request**
 ```json
 {
-  "error": "Organization not found"
+  "error": "Error message describing the issue"
 }
 ```
 
-## Unit Types
+**404 Not Found**
+```json
+{
+  "error": "Resource not found"
+}
+```
 
-The following unit types are supported:
+## Field Definitions
 
-- Pieces: `pieces`, `bundles`
-- Weight: `weight.lbs`, `weight.oz`, `weight.kg`, `weight.grams`, `weight.mg`, `weight.ct`, `weight.gr`
-- Length: `length.ft`, `length.yd`, `length.in`, `length.m`, `length.cm`, `length.mm`
-- Area: `area.sqft`, `area.sqin`, `area.sqm`, `area.sqcm`
-- Volume: `volume.oz`, `volume.pt`, `volume.qt`, `volume.ga`, `volume.ml`, `volume.liters`, `volume.bdft`, `volume.cuin`, `volume.cuft`, `volume.cuyd`, `volume.cm3`, `volume.m3`, `volume.tsp`, `volume.tbsp`, `volume.cup`
-- Time: `time.seconds`, `time.minutes`, `time.hours`, `time.days`
+### unitType
 
-## Production Types
+Possible values for the `unitType` field:
 
-- `infinite`: Infinite supply
-- `single`: Single item production
-- `produced`: Batch production
-- `supplied`: Supplied from materials
-- `bundle`: Bundle of products
+- `pieces`
+- `bundles`
+- **Weight:** `weight.lbs`, `weight.oz`, `weight.kg`, `weight.grams`, `weight.mg`, `weight.ct`, `weight.gr`
+- **Length:** `length.ft`, `length.yd`, `length.in`, `length.m`, `length.cm`, `length.mm`
+- **Area:** `area.sqft`, `area.sqin`, `area.sqm`, `area.sqcm`
+- **Volume:** `volume.oz`, `volume.pt`, `volume.qt`, `volume.ga`, `volume.ml`, `volume.liters`, `volume.bdft`, `volume.cuin`, `volume.cuft`, `volume.cuyd`, `volume.cm3`, `volume.m3`, `volume.tsp`, `volume.tbsp`, `volume.cup`
+- **Time:** `time.seconds`, `time.minutes`, `time.hours`, `time.days`
 
