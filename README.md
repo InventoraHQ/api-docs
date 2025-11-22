@@ -3,21 +3,29 @@
 
 ## Authentication
 
-All API requests require authentication using an API key. To obtain an API key, please contact hello@inventora.com.
+All API requests require authentication using an API key. To obtain an API key, please contact us at hello@inventora.com.
 
-Include your API key in requests using either:
-- Header: `X-Inventora-API-Key: your_api_key`
-- Query parameter: `?x-inventora-api-key=your_api_key`
+Include your API key in requests using one of these methods:
+
+**Header (recommended):**
+```
+x-inventora-api-key: your-api-key
+```
+
+**Query parameter:**
+```
+?x-inventora-api-key=your-api-key
+```
 
 ## Base URL
 
-All endpoints are relative to your API base URL.
+```
+https://app.inventora.com/api
+```
 
 ## Endpoints
 
-### Products
-
-#### List Products
+### Get Products
 
 ```
 GET /products
@@ -26,8 +34,8 @@ GET /products
 Returns a paginated list of products.
 
 **Query Parameters:**
-- `limit` (optional): Number of results to return (max 1000, default 100)
-- `offset` (optional): Number of results to skip (default 0)
+- `limit` (optional): Number of results to return (default: 100, max: 1000)
+- `offset` (optional): Number of results to skip (default: 0)
 
 **Response:**
 ```json
@@ -37,43 +45,43 @@ Returns a paginated list of products.
       "id": "string",
       "name": "string",
       "sku": "string",
-      "stockLevel": "number",
+      "stockLevel": 0,
       "unitType": "string",
-      "unitPrice": "number",
-      "minLevel": "number",
+      "unitPrice": 0,
+      "minLevel": 0,
       "notes": "string",
-      "retailPrice": "number",
-      "wholesalePrice": "number",
+      "retailPrice": 0,
+      "wholesalePrice": 0,
       "ean": "string",
-      "minimumQuantity": "number",
+      "minimumQuantity": 0,
       "reorderURLs": ["string"],
       "locationStockLevels": {
-        "locationName": "number"
+        "Location Name": 0
       },
-      "productionType": "infinite|single|produced|supplied|bundle",
+      "productionType": "infinite|single|batch|supplied|bundle",
       "materials": [
         {
           "id": "string",
           "name": "string",
           "sku": "string",
           "unitType": "string",
-          "unitPrice": "number",
-          "stockLevel": "number",
-          "minLevel": "number",
-          "quantityUsed": "number"
+          "unitPrice": 0,
+          "stockLevel": 0,
+          "minLevel": 0,
+          "quantityUsed": 0
         }
       ]
     }
   ],
   "pagination": {
-    "totalCount": "number",
-    "offset": "number",
-    "limit": "number"
+    "totalCount": 0,
+    "offset": 0,
+    "limit": 100
   }
 }
 ```
 
-#### Get Product
+### Get Product
 
 ```
 GET /products/:id
@@ -82,9 +90,41 @@ GET /products/:id
 Returns a single product by ID.
 
 **Response:**
-Same as individual product object in List Products response.
+```json
+{
+  "id": "string",
+  "name": "string",
+  "sku": "string",
+  "stockLevel": 0,
+  "unitType": "string",
+  "unitPrice": 0,
+  "minLevel": 0,
+  "notes": "string",
+  "retailPrice": 0,
+  "wholesalePrice": 0,
+  "ean": "string",
+  "minimumQuantity": 0,
+  "reorderURLs": ["string"],
+  "locationStockLevels": {
+    "Location Name": 0
+  },
+  "productionType": "infinite|single|batch|supplied|bundle",
+  "materials": [
+    {
+      "id": "string",
+      "name": "string",
+      "sku": "string",
+      "unitType": "string",
+      "unitPrice": 0,
+      "stockLevel": 0,
+      "minLevel": 0,
+      "quantityUsed": 0
+    }
+  ]
+}
+```
 
-#### Update Product
+### Update Product
 
 ```
 PATCH /products/:id
@@ -98,26 +138,22 @@ Updates a product's details.
   "name": "string",
   "sku": "string",
   "unitType": "string",
-  "unitPrice": "number",
-  "minLevel": "number",
-  "productionType": "infinite|single|produced|supplied|bundle",
+  "unitPrice": 0,
+  "minLevel": 0,
   "notes": "string",
-  "retailPrice": "number",
-  "wholesalePrice": "number",
+  "retailPrice": 0,
+  "wholesalePrice": 0,
   "ean": "string",
-  "minimumQuantity": "number",
+  "minimumQuantity": 0,
   "reorderURLs": ["string"]
 }
 ```
 
-All fields are optional. Only included fields will be updated.
+**Note:** `unitPrice` can only be updated if the resource has no stock blocks tied to non-initial logs.
 
-**Note:** `unitPrice` cannot be updated if the resource has stock blocks tied to non-initial logs.
+**Response:** Returns the updated product (same format as Get Product).
 
-**Response:**
-Returns the updated product object.
-
-#### Update Product Stock Level
+### Update Product Stock Level
 
 ```
 POST /products/:id/stock-level-updates
@@ -128,65 +164,76 @@ Updates the stock level for a product at a specific location.
 **Request Body:**
 ```json
 {
-  "quantity": "number",
+  "quantity": 0,
   "locationName": "string",
   "updateType": "audit|restock|loss|custom",
   "notes": "string",
-  "customStatusId": "number"
+  "customStatusId": 0
 }
 ```
 
 **Fields:**
-- `quantity` (required): The quantity to set or adjust
+- `quantity` (required): The quantity to update
 - `locationName` (required): Name of the location
 - `updateType` (required): Type of update
-  - `audit`: Sets stock to absolute value
-  - `restock`: Adds to current stock
-  - `loss`: Removes from current stock
-  - `custom`: Custom status (requires `customStatusId`)
+  - `audit`: Sets absolute stock level
+  - `restock`: Adds to stock level
+  - `loss`: Removes from stock level
+  - `custom`: Uses a custom status (requires `customStatusId`)
 - `notes` (optional): Notes about the update
-- `customStatusId` (required for `custom` type): ID of custom status
+- `customStatusId` (required if `updateType` is `custom`): ID of the custom status
 
-**Response:**
-Returns the updated product object with new stock levels.
+**Response:** Returns the updated product (same format as Get Product).
 
-### Materials
-
-#### List Materials
+### Get Materials
 
 ```
 GET /materials
 ```
 
-Returns a paginated list of materials. Parameters and response format are identical to List Products.
+Returns a paginated list of materials.
 
-#### Get Material
+**Query Parameters:**
+- `limit` (optional): Number of results to return (default: 100, max: 1000)
+- `offset` (optional): Number of results to skip (default: 0)
+
+**Response:** Same format as Get Products.
+
+### Get Material
 
 ```
 GET /materials/:id
 ```
 
-Returns a single material by ID. Response format is identical to Get Product.
+Returns a single material by ID.
 
-#### Update Material
+**Response:** Same format as Get Product.
+
+### Update Material
 
 ```
 PATCH /materials/:id
 ```
 
-Updates a material's details. Request body and response format are identical to Update Product.
+Updates a material's details.
 
-#### Update Material Stock Level
+**Request Body:** Same format as Update Product.
+
+**Response:** Returns the updated material (same format as Get Product).
+
+### Update Material Stock Level
 
 ```
 POST /materials/:id/stock-level-updates
 ```
 
-Updates the stock level for a material at a specific location. Request body and response format are identical to Update Product Stock Level.
+Updates the stock level for a material at a specific location.
 
-### Locations
+**Request Body:** Same format as Update Product Stock Level.
 
-#### List Locations
+**Response:** Returns the updated material (same format as Get Product).
+
+### Get Locations
 
 ```
 GET /locations
@@ -195,8 +242,8 @@ GET /locations
 Returns a paginated list of locations.
 
 **Query Parameters:**
-- `limit` (optional): Number of results to return (max 1000, default 100)
-- `offset` (optional): Number of results to skip (default 0)
+- `limit` (optional): Number of results to return (default: 100, max: 1000)
+- `offset` (optional): Number of results to skip (default: 0)
 
 **Response:**
 ```json
@@ -204,10 +251,9 @@ Returns a paginated list of locations.
   "data": [
     {
       "id": "string",
-      "OrganizationId": "string",
       "name": "string",
-      "isDefault": "boolean",
-      "hideMaterials": "boolean",
+      "isDefault": false,
+      "hideMaterials": false,
       "address1": "string",
       "address2": "string",
       "city": "string",
@@ -217,9 +263,9 @@ Returns a paginated list of locations.
     }
   ],
   "pagination": {
-    "totalCount": "number",
-    "offset": "number",
-    "limit": "number"
+    "totalCount": 0,
+    "offset": 0,
+    "limit": 100
   }
 }
 ```
@@ -228,27 +274,55 @@ Returns a paginated list of locations.
 
 ### unitType
 
-Valid unit types:
+Valid unit types include:
+
+**Count:**
 - `pieces`
 - `bundles`
-- Weight: `weight.lbs`, `weight.oz`, `weight.kg`, `weight.grams`, `weight.mg`, `weight.ct`, `weight.gr`
-- Length: `length.ft`, `length.yd`, `length.in`, `length.m`, `length.cm`, `length.mm`
-- Area: `area.sqft`, `area.sqin`, `area.sqm`, `area.sqcm`
-- Volume: `volume.oz`, `volume.pt`, `volume.qt`, `volume.ga`, `volume.ml`, `volume.liters`, `volume.bdft`, `volume.cuin`, `volume.cuft`, `volume.cuyd`, `volume.cm3`, `volume.m3`, `volume.tsp`, `volume.tbsp`, `volume.cup`
-- Time: `time.seconds`, `time.minutes`, `time.hours`, `time.days`
 
-## Error Responses
+**Weight:**
+- `weight.lbs`
+- `weight.oz`
+- `weight.kg`
+- `weight.grams`
+- `weight.mg`
+- `weight.ct`
+- `weight.gr`
 
-Error responses will include an `error` field with a description:
+**Length:**
+- `length.ft`
+- `length.yd`
+- `length.in`
+- `length.m`
+- `length.cm`
+- `length.mm`
 
-```json
-{
-  "error": "Error message description"
-}
-```
+**Area:**
+- `area.sqft`
+- `area.sqin`
+- `area.sqm`
+- `area.sqcm`
 
-Common HTTP status codes:
-- `400`: Bad Request - Invalid parameters or request body
-- `401`: Unauthorized - Missing or invalid API key
-- `404`: Not Found - Resource not found
+**Volume:**
+- `volume.oz`
+- `volume.pt`
+- `volume.qt`
+- `volume.ga`
+- `volume.ml`
+- `volume.liters`
+- `volume.bdft`
+- `volume.cuin`
+- `volume.cuft`
+- `volume.cuyd`
+- `volume.cm3`
+- `volume.m3`
+- `volume.tsp`
+- `volume.tbsp`
+- `volume.cup`
+
+**Time:**
+- `time.seconds`
+- `time.minutes`
+- `time.hours`
+- `time.days`
 
