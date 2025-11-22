@@ -5,38 +5,13 @@
 
 All API requests require authentication using an API key. To obtain an API key, please contact hello@inventora.com.
 
-Include your API key in one of two ways:
-
-1. As a header: `x-inventora-api-key: YOUR_API_KEY`
-2. As a query parameter: `?x-inventora-api-key=YOUR_API_KEY`
+Include your API key in requests using either:
+- Header: `X-Inventora-API-Key: your_api_key`
+- Query parameter: `?x-inventora-api-key=your_api_key`
 
 ## Base URL
 
 All endpoints are relative to your API base URL.
-
-## Common Parameters
-
-### Pagination
-
-List endpoints support pagination with the following query parameters:
-
-- `limit` (optional): Number of results to return (default: 100, max: 1000)
-- `offset` (optional): Number of results to skip (default: 0)
-
-### Response Format
-
-Paginated responses include:
-
-```json
-{
-  "data": [...],
-  "pagination": {
-    "totalCount": 150,
-    "offset": 0,
-    "limit": 100
-  }
-}
-```
 
 ## Endpoints
 
@@ -51,8 +26,8 @@ GET /products
 Returns a paginated list of products.
 
 **Query Parameters:**
-- `limit` (optional): Number of results (default: 100, max: 1000)
-- `offset` (optional): Results to skip (default: 0)
+- `limit` (optional): Number of results to return (max 1000, default 100)
+- `offset` (optional): Number of results to skip (default 0)
 
 **Response:**
 ```json
@@ -73,7 +48,7 @@ Returns a paginated list of products.
       "minimumQuantity": "number",
       "reorderURLs": ["string"],
       "locationStockLevels": {
-        "Location Name": "number"
+        "locationName": "number"
       },
       "productionType": "infinite|single|produced|supplied|bundle",
       "materials": [
@@ -91,9 +66,9 @@ Returns a paginated list of products.
     }
   ],
   "pagination": {
-    "totalCount": 150,
-    "offset": 0,
-    "limit": 100
+    "totalCount": "number",
+    "offset": "number",
+    "limit": "number"
   }
 }
 ```
@@ -106,7 +81,8 @@ GET /products/:id
 
 Returns a single product by ID.
 
-**Response:** Same as a single product object from the list endpoint.
+**Response:**
+Same as individual product object in List Products response.
 
 #### Update Product
 
@@ -134,11 +110,12 @@ Updates a product's details.
 }
 ```
 
-All fields are optional. Only include fields you want to update.
+All fields are optional. Only included fields will be updated.
 
-**Note:** `unitPrice` cannot be updated if the product has stock blocks tied to non-initial logs.
+**Note:** `unitPrice` cannot be updated if the resource has stock blocks tied to non-initial logs.
 
-**Response:** Updated product object.
+**Response:**
+Returns the updated product object.
 
 #### Update Product Stock Level
 
@@ -159,20 +136,19 @@ Updates the stock level for a product at a specific location.
 }
 ```
 
-**Required fields:**
-- `quantity`: The quantity to set (for audit) or adjust (for other types)
-- `locationName`: Name of the location
-- `updateType`: Type of stock update
-  - `audit`: Sets stock to the exact quantity specified
-  - `restock`: Adds to current stock level
-  - `loss`: Subtracts from current stock level
-  - `custom`: Uses a custom status (requires `customStatusId`)
+**Fields:**
+- `quantity` (required): The quantity to set or adjust
+- `locationName` (required): Name of the location
+- `updateType` (required): Type of update
+  - `audit`: Sets stock to absolute value
+  - `restock`: Adds to current stock
+  - `loss`: Removes from current stock
+  - `custom`: Custom status (requires `customStatusId`)
+- `notes` (optional): Notes about the update
+- `customStatusId` (required for `custom` type): ID of custom status
 
-**Optional fields:**
-- `notes`: Additional notes about the update
-- `customStatusId`: Required when `updateType` is "custom"
-
-**Response:** Updated product object with new stock levels.
+**Response:**
+Returns the updated product object with new stock levels.
 
 ### Materials
 
@@ -182,13 +158,7 @@ Updates the stock level for a product at a specific location.
 GET /materials
 ```
 
-Returns a paginated list of materials (supplies).
-
-**Query Parameters:**
-- `limit` (optional): Number of results (default: 100, max: 1000)
-- `offset` (optional): Results to skip (default: 0)
-
-**Response:** Same format as products list endpoint.
+Returns a paginated list of materials. Parameters and response format are identical to List Products.
 
 #### Get Material
 
@@ -196,9 +166,7 @@ Returns a paginated list of materials (supplies).
 GET /materials/:id
 ```
 
-Returns a single material by ID.
-
-**Response:** Same as a single material object from the list endpoint.
+Returns a single material by ID. Response format is identical to Get Product.
 
 #### Update Material
 
@@ -206,11 +174,7 @@ Returns a single material by ID.
 PATCH /materials/:id
 ```
 
-Updates a material's details.
-
-**Request Body:** Same as update product endpoint.
-
-**Response:** Updated material object.
+Updates a material's details. Request body and response format are identical to Update Product.
 
 #### Update Material Stock Level
 
@@ -218,11 +182,7 @@ Updates a material's details.
 POST /materials/:id/stock-level-updates
 ```
 
-Updates the stock level for a material at a specific location.
-
-**Request Body:** Same as update product stock level endpoint.
-
-**Response:** Updated material object with new stock levels.
+Updates the stock level for a material at a specific location. Request body and response format are identical to Update Product Stock Level.
 
 ### Locations
 
@@ -235,8 +195,8 @@ GET /locations
 Returns a paginated list of locations.
 
 **Query Parameters:**
-- `limit` (optional): Number of results (default: 100, max: 1000)
-- `offset` (optional): Results to skip (default: 0)
+- `limit` (optional): Number of results to return (max 1000, default 100)
+- `offset` (optional): Number of results to skip (default 0)
 
 **Response:**
 ```json
@@ -244,6 +204,7 @@ Returns a paginated list of locations.
   "data": [
     {
       "id": "string",
+      "OrganizationId": "string",
       "name": "string",
       "isDefault": "boolean",
       "hideMaterials": "boolean",
@@ -256,54 +217,38 @@ Returns a paginated list of locations.
     }
   ],
   "pagination": {
-    "totalCount": 10,
-    "offset": 0,
-    "limit": 100
+    "totalCount": "number",
+    "offset": "number",
+    "limit": "number"
   }
 }
 ```
 
-## Error Responses
-
-All endpoints may return the following error responses:
-
-**401 Unauthorized**
-```json
-{
-  "error": "API key missing"
-}
-```
-```json
-{
-  "error": "Invalid API key"
-}
-```
-
-**400 Bad Request**
-```json
-{
-  "error": "Error message describing the issue"
-}
-```
-
-**404 Not Found**
-```json
-{
-  "error": "Resource not found"
-}
-```
-
-## Field Definitions
+## Types
 
 ### unitType
 
-Possible values for the `unitType` field:
-
+Valid unit types:
 - `pieces`
 - `bundles`
-- **Weight:** `weight.lbs`, `weight.oz`, `weight.kg`, `weight.grams`, `weight.mg`, `weight.ct`, `weight.gr`
-- **Length:** `length.ft`, `length.yd`, `length.in`, `length.m`, `length.cm`, `length.mm`
-- **Area:** `area.sqft`, `area.sqin`, `area.sqm`, `area.sqcm`
-- **Volume:** `volume.oz`, `volume.pt`, `volume.qt`, `volume.ga`, `volume.ml`, `volume.liters`, `volume.bdft`, `volume.cuin`, `volume.cuft`, `volume.cuyd`, `volume.cm3`, `volume.m3`, `volume.tsp`, `volume.tbsp`, `volume.cup`
-- **Time:** `time.seconds`, `time.minutes`, `time.hours`, `time.days`
+- Weight: `weight.lbs`, `weight.oz`, `weight.kg`, `weight.grams`, `weight.mg`, `weight.ct`, `weight.gr`
+- Length: `length.ft`, `length.yd`, `length.in`, `length.m`, `length.cm`, `length.mm`
+- Area: `area.sqft`, `area.sqin`, `area.sqm`, `area.sqcm`
+- Volume: `volume.oz`, `volume.pt`, `volume.qt`, `volume.ga`, `volume.ml`, `volume.liters`, `volume.bdft`, `volume.cuin`, `volume.cuft`, `volume.cuyd`, `volume.cm3`, `volume.m3`, `volume.tsp`, `volume.tbsp`, `volume.cup`
+- Time: `time.seconds`, `time.minutes`, `time.hours`, `time.days`
+
+## Error Responses
+
+Error responses will include an `error` field with a description:
+
+```json
+{
+  "error": "Error message description"
+}
+```
+
+Common HTTP status codes:
+- `400`: Bad Request - Invalid parameters or request body
+- `401`: Unauthorized - Missing or invalid API key
+- `404`: Not Found - Resource not found
 
